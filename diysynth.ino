@@ -6,6 +6,7 @@
 #include <tables/square_analogue512_int8.h>
 #include <mozzi_midi.h>
 #include <MIDI.h>
+#include <tables/cos2048_int8.h>
 
 //This code sets up your MIDI output
 MIDI_CREATE_DEFAULT_INSTANCE();
@@ -16,17 +17,19 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 //To change the type of wave from saw to square, comment out the 2 lines below and remove the slashes from the 2 lines beneath them.
 Oscil <SAW512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc1(SAW512_DATA);
 Oscil <SAW512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc2(SAW512_DATA);
+Oscil<COS2048_NUM_CELLS, CONTROL_RATE> kVibrato(COS2048_DATA);
 //Oscil <SQUARE_ANALOGUE512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc1(SQUARE_ANALOGUE512_DATA);
 //Oscil <SQUARE_ANALOGUE512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc2(SQUARE_ANALOGUE512_DATA);
+
+int current_note = 0; //This keeps track of what note is currently playing.
 
 //This code sets up the envelope.
 ADSR <MOZZI_CONTROL_RATE, MOZZI_AUDIO_RATE> envelope;
 unsigned int attack_ms = 0; //You can change this value at any time. Maybe even with a potentiometer?
 unsigned int release_ms = 1000; //You can change this value at any time. Maybe even with a potentiometer?
-int current_note = 0; //This keeps track of what note is currently playing.
-float pitch_bend = 0; //We will use this to bend the pitch of one of both of the oscillators.
 
-//These variables keep track of your input pins
+
+//These variables keep track of your input pins. Don't touch them.
 long last_debounce = 0;
 uint8_t debounce_delay_ms = 10;
 uint8_t input_pins[] = {2, 3, 4, 5, 6, 7, 8, 10, 11, 12};
@@ -35,13 +38,14 @@ bool input_states[] = {0,0,0,0,0,0,0,0,0,0};
 
 #define led_pin 13
 
-//This is the setup code. It runs once when your synth powers up/
+//This is the setup code. It runs once when your synth powers up.
 void setup() {
   MIDI.begin(MIDI_CHANNEL_OMNI);
   startMozzi(64);
   aOsc1.setFreq(100);
   aOsc2.setFreq(100);
   envelope.setADLevels(255, 255);
+  kVibrato.setFreq(1);
 
   
   //This code sets the attack and release times. You can use this line of code at any point to change these values.
@@ -87,30 +91,42 @@ void check_inputs()
 //This function 
 void check_analog_inputs()
 {
-  //This code is currently checking the value of your first analog pin (labelled 0 on the PCB). It turns it into a value between 100 and 200. 
-  //Then it converts it into a "pitch bend" value between 1 and 2. If you like, you can use this value to alter the pitch of one or both of your oscillators.
-  int min_value = 100;
-  int max_value = 200;
+
+  //This code is currently checking the value of your first analog pin (labelled 0 on the PCB). It turns this into a value between 0 and 1000.
+  //If you like, you can use this value to alter the release time of your envelope.
+  int min_value = 0;
+  int max_value = 1000;
   int analog_0 = map(mozziAnalogRead(analog_pins[0]),0,1024,min_value,max_value);
-  pitch_bend = (float) analog_0/100;
+  release_ms = analog_0;
+  envelope.setTimes(attack_ms, 0, 10000, release_ms);
+  
+  //This code is currently checking the value of your second analog pin (labelled 1 on the PCB). It turns it into a value between 100 and 200. 
+  //Then it converts it into a "pitch bend" value between 1 and 2. If you like, you can use this value to alter the pitch of one or both of your oscillators.
+  min_value = 100;
+  max_value = 200;
+  int analog_1 = map(mozziAnalogRead(analog_pins[1]),0,1024,min_value,max_value);
+  float pitch_bend = (float) analog_1/100;
   //aOsc1.setFreq(current_note * pitch_bend);
   //aOsc2.setFreq(current_note * pitch_bend);
+ 
 
-  //This code is currently checking the value of your second analog pin (labelled 1 on the PCB). It turns this into a value between 0 and 1000.
-  //If you like, you can use this value to alter the release time of your envelope.
-  min_value = 0;
-  max_value = 1000;
-  int analog_1 = map(mozziAnalogRead(analog_pins[1]),0,1024,min_value,max_value);
-  release_ms = analog_1;
-  //envelope.setTimes(attack_ms, 0, 10000, release_ms);
+  //This code is currently checking the value of your third analog pin (labelled 2 on the PCB). It turns this into a value between 1 and 10.
+  //If you like, you can use this value to alter the speed of the vibrato.
+  float vibrato_amplitude = 3.5;
+  min_value = 1;
+  max_value = 10;
+  int analog_2 = map(mozziAnalogRead(analog_pins[2]),0,1024,min_value,max_value);
+  kVibrato.setFreq(analog_2);
+  float vibrato_value = ((float) kVibrato.next())/127*vibrato_amplitude;
+  //aOsc1.setFreq(current_note + vibrato_value);
+  //aOsc2.setFreq(current_note + vibrato_value);
 
 }
 
-//This function controls what happens when one of your inputs is triggered.
+//This function controls what happens when one of your inputs is triggered. 
 void input_on(uint8_t input_number)
 {
   //Any code up here will run every time an input is triggered, regardless of the number.
-
   digitalWrite(led_pin, HIGH); //When any input is triggered, the inbuilt LED turns on.
 
 
@@ -215,7 +231,7 @@ void input_off(uint8_t input_number)
   }
 }
 
-//This is the function used to check whether all inputs are off
+//This is the function used to check whether all inputs are off. Don't touch it.
 bool all_inputs_off()
 {
   for (uint8_t i = 0; i < 10; i++)
@@ -228,7 +244,7 @@ bool all_inputs_off()
   return 1;
 }
 
-//This is the function used to turn on a synth note
+//This is the function used to turn on a synth note.  Don't touch it.
 void aux_note_on(int midi_note)
 {
   current_note = mtof(midi_note);
@@ -237,7 +253,7 @@ void aux_note_on(int midi_note)
   envelope.noteOn();
 }
 
-//This is the function used to turn off the synth note
+//This is the function used to turn off the synth note.  Don't touch it.
 void aux_note_off()
 {
   envelope.noteOff();
