@@ -5,13 +5,17 @@
 #include <tables/saw512_int8.h>
 #include <tables/square_analogue512_int8.h>
 #include <mozzi_midi.h>
-#include <MIDI.h>
 #include <tables/cos2048_int8.h>
 
-//This code sets up your MIDI output
-MIDI_CREATE_DEFAULT_INSTANCE();
-#define midi_channel 1 //This is the MIDI channel that your board will send messages on
-#define midi_velocity 127 //This is the default velocity of your MIDI messages (127 is the max)
+#define midi_is_on 0
+//This code sets up your MIDI output if midi_is_on is set to 1
+#if midi_is_on
+  #include <MIDI.h>
+  MIDI_CREATE_DEFAULT_INSTANCE();
+  #define midi_channel 1 //This is the MIDI channel that your board will send messages on
+  #define midi_velocity 127 //This is the default velocity of your MIDI messages (127 is the max)
+#endif 
+
 
 //This code sets up your synthesizer. As you can see, we're currently using 2 saw wave oscillators.
 //To change the type of wave from saw to square, comment out the 2 lines below and remove the slashes from the 2 lines beneath them.
@@ -40,14 +44,15 @@ bool input_states[] = {0,0,0,0,0,0,0,0,0,0};
 
 //This is the setup code. It runs once when your synth powers up.
 void setup() {
-  MIDI.begin(MIDI_CHANNEL_OMNI);
+  #if midi_is_on
+    MIDI.begin(MIDI_CHANNEL_OMNI);
+  #endif
   startMozzi(64);
   aOsc1.setFreq(100);
   aOsc2.setFreq(100);
   envelope.setADLevels(255, 255);
   kVibrato.setFreq(1);
 
-  
   //This code sets the attack and release times. You can use this line of code at any point to change these values.
   envelope.setTimes(attack_ms, 0, 10000, release_ms);
 
@@ -105,7 +110,7 @@ void check_analog_inputs()
   min_value = 100;
   max_value = 200;
   int analog_1 = map(mozziAnalogRead(analog_pins[1]),0,1024,min_value,max_value);
-  float pitch_bend = (float) analog_1/100;
+  float pitch_bend = (int) analog_1%30/100;
   //aOsc1.setFreq(current_note * pitch_bend);
   //aOsc2.setFreq(current_note * pitch_bend);
  
@@ -139,8 +144,8 @@ void input_on(uint8_t input_number)
     case 0: 
 
       //what happens when input 0 is triggered?
-      aux_note_on(48);
-      MIDI.sendNoteOn(48, midi_velocity, midi_channel);
+      aux_note_on(input_number);
+      //MIDI.sendNoteOn(48, midi_velocity, midi_channel);
 
       break;
 
@@ -148,7 +153,7 @@ void input_on(uint8_t input_number)
 
       //what happens when input 1 is triggered?
       aux_note_on(50);
-      MIDI.sendNoteOn(50, midi_velocity, midi_channel);
+      //MIDI.sendNoteOn(50, midi_velocity, midi_channel);
 
 
       break;
@@ -157,7 +162,7 @@ void input_on(uint8_t input_number)
 
       //what happens when input 2 is triggered?
       aux_note_on(52);
-      MIDI.sendNoteOn(52, midi_velocity, midi_channel);
+      //MIDI.sendNoteOn(52, midi_velocity, midi_channel);
 
 
       break;
@@ -166,7 +171,7 @@ void input_on(uint8_t input_number)
 
       //what happens when input 3 is triggered?
       aux_note_on(53);
-      MIDI.sendNoteOn(53, midi_velocity, midi_channel);
+      //MIDI.sendNoteOn(53, midi_velocity, midi_channel);
 
 
       break;
@@ -175,7 +180,7 @@ void input_on(uint8_t input_number)
 
       //what happens when input 4 is triggered?
       aux_note_on(55);
-      MIDI.sendNoteOn(55, midi_velocity, midi_channel);
+      //MIDI.sendNoteOn(55, midi_velocity, midi_channel);
 
 
       break;
@@ -184,7 +189,7 @@ void input_on(uint8_t input_number)
 
       //what happens when input 5 is triggered?
       aux_note_on(57);
-      MIDI.sendNoteOn(57, midi_velocity, midi_channel);
+      //MIDI.sendNoteOn(57, midi_velocity, midi_channel);
 
 
       break;
@@ -193,7 +198,7 @@ void input_on(uint8_t input_number)
 
       //what happens when input 6 is triggered?
       aux_note_on(59);
-      MIDI.sendNoteOn(59, midi_velocity, midi_channel);
+      //MIDI.sendNoteOn(59, midi_velocity, midi_channel);
 
 
       break;
@@ -202,7 +207,7 @@ void input_on(uint8_t input_number)
 
       //what happens when input 7 is triggered?
       aux_note_on(60);
-      MIDI.sendNoteOn(60, midi_velocity, midi_channel);
+      //MIDI.sendNoteOn(60, midi_velocity, midi_channel);
 
 
       break;
@@ -227,7 +232,9 @@ void input_off(uint8_t input_number)
   {
     digitalWrite(led_pin, LOW); //the LED turns off.
     aux_note_off(); //the note turns off.
-    MIDI.sendControlChange(123, 0, midi_channel); //send a MIDI command to turn off all notes.
+    #if midi_is_on
+      MIDI.sendControlChange(123, 0, midi_channel); //send a MIDI command to turn off all notes.
+    #endif
   }
 }
 
