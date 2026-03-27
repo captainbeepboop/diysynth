@@ -144,7 +144,7 @@ void input_on(uint8_t input_number)
     case 0: 
 
       //what happens when input 0 is triggered?
-      aux_note_on(input_number);
+      aux_note_on(48);
       //MIDI.sendNoteOn(48, midi_velocity, midi_channel);
 
       break;
