@@ -96,7 +96,6 @@ void check_inputs()
 //This function 
 void check_analog_inputs()
 {
-
   //This code is currently checking the value of your first analog pin (labelled 0 on the PCB). It turns this into a value between 0 and 1000.
   //If you like, you can use this value to alter the release time of your envelope.
   int min_value = 0;
@@ -111,17 +110,16 @@ void check_analog_inputs()
   max_value = 200;
   int analog_1 = map(mozziAnalogRead(analog_pins[1]),0,1024,min_value,max_value);
   float pitch_bend = analog_1;
-  //aOsc1.setFreq(current_note + pitch_bend);
-  //aOsc2.setFreq(current_note + pitch_bend);
+  aOsc1.setFreq(current_note + pitch_bend);
+  aOsc2.setFreq(current_note + pitch_bend);
  
 
   //This code is currently checking the value of your third analog pin (labelled 2 on the PCB). It turns this into a value between 1 and 10.
-  //If you like, you can use this value to alter the speed of the vibrato.
+  //If you like, you can use this value to alter the speed of the vibrato. Just get rid of the slashes before the 2 lines
   float vibrato_amplitude = 3.5;
   min_value = 1;
   max_value = 10;
   int analog_2 = map(mozziAnalogRead(analog_pins[2]),0,1024,min_value,max_value);
-  kVibrato.setFreq(analog_2);
   float vibrato_value = ((float) kVibrato.next())/127*vibrato_amplitude;
   //aOsc1.setFreq(current_note + vibrato_value);
   //aOsc2.setFreq(current_note + vibrato_value);
