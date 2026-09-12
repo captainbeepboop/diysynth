@@ -7,7 +7,7 @@
 #include <mozzi_midi.h>
 #include <tables/cos2048_int8.h>
 
-#define midi_is_on 0
+#define midi_is_on 1
 //This code sets up your MIDI output if midi_is_on is set to 1
 #if midi_is_on
   #include <MIDI.h>
@@ -19,11 +19,11 @@
 
 //This code sets up your synthesizer. As you can see, we're currently using 2 saw wave oscillators.
 //To change the type of wave from saw to square, comment out the 2 lines below and remove the slashes from the 2 lines beneath them.
-Oscil <SAW512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc1(SAW512_DATA);
-Oscil <SAW512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc2(SAW512_DATA);
+//Oscil <SAW512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc1(SAW512_DATA);
+//Oscil <SAW512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc2(SAW512_DATA);
 Oscil<COS2048_NUM_CELLS, CONTROL_RATE> kVibrato(COS2048_DATA);
-//Oscil <SQUARE_ANALOGUE512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc1(SQUARE_ANALOGUE512_DATA);
-//Oscil <SQUARE_ANALOGUE512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc2(SQUARE_ANALOGUE512_DATA);
+Oscil <SQUARE_ANALOGUE512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc1(SQUARE_ANALOGUE512_DATA);
+Oscil <SQUARE_ANALOGUE512_NUM_CELLS, MOZZI_AUDIO_RATE> aOsc2(SQUARE_ANALOGUE512_DATA);
 
 int current_note = 0; //This keeps track of what note is currently playing.
 
@@ -99,8 +99,8 @@ void check_analog_inputs()
   //This code is currently checking the value of your first analog pin (labelled 0 on the PCB). It turns this into a value between 0 and 1000.
   //If you like, you can use this value to alter the release time of your envelope.
   int min_value = 0;
-  int max_value = 1000;
-  int analog_0 = map(mozziAnalogRead(analog_pins[0]),0,1024,min_value,max_value);
+  int max_value = 5000;
+  int analog_0 = map(mozziAnalogRead(analog_pins[0]),1024,200,min_value,max_value);
   release_ms = analog_0;
   envelope.setTimes(attack_ms, 0, 10000, release_ms);
   
@@ -108,10 +108,10 @@ void check_analog_inputs()
   //Then it converts it into a "pitch bend" value between 1 and 2. If you like, you can use this value to alter the pitch of one or both of your oscillators.
   min_value = 100;
   max_value = 200;
-  int analog_1 = map(mozziAnalogRead(analog_pins[1]),0,1024,min_value,max_value);
-  float pitch_bend = analog_1;
-  aOsc1.setFreq(current_note + pitch_bend);
-  aOsc2.setFreq(current_note + pitch_bend);
+  float analog_1 = map(mozziAnalogRead(analog_pins[1]),800,200,min_value,max_value);
+  float pitch_bend = analog_1/100;
+  aOsc1.setFreq(current_note * pitch_bend);
+  aOsc2.setFreq(current_note * pitch_bend);
  
 
   //This code is currently checking the value of your third analog pin (labelled 2 on the PCB). It turns this into a value between 1 and 10.
@@ -119,7 +119,7 @@ void check_analog_inputs()
   float vibrato_amplitude = 3.5;
   min_value = 1;
   max_value = 10;
-  int analog_2 = map(mozziAnalogRead(analog_pins[2]),0,1024,min_value,max_value);
+  int analog_2 = map(mozziAnalogRead(analog_pins[2]),1024,200,min_value,max_value);
   float vibrato_value = ((float) kVibrato.next())/127*vibrato_amplitude;
   //aOsc1.setFreq(current_note + vibrato_value);
   //aOsc2.setFreq(current_note + vibrato_value);
